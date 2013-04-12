@@ -657,7 +657,24 @@ void Head::renderHead( int faceToFace, int isMine ) {
 
         //  Head
         glutSolidSphere(1, 30, 30);
-                
+
+
+
+double modelMatrix[16], projMatrix[16];
+int viewport[4];
+double x,y,z;
+//const Point& position (obj->getPosition());
+glGetDoublev(GL_MODELVIEW_MATRIX,modelMatrix);
+glGetDoublev(GL_PROJECTION_MATRIX,projMatrix);
+glGetIntegerv(GL_VIEWPORT,viewport);
+if ( gluProject( 0,0,0,modelMatrix, projMatrix,viewport,&x,&y,&z) == GL_TRUE)
+{
+    headPosition2D = glm::vec3( x, y, z );
+     // drawtext(x, y + 40, scale, 0, 1.0, mono, "HELLO MY", 0.5, 0.8, 0.2);
+}    
+
+
+
         //  Ears
         glPushMatrix();
             glTranslatef(1.0, 0, 0);
@@ -776,8 +793,7 @@ void Head::renderHead( int faceToFace, int isMine ) {
     }
     glPopMatrix();
  }
- 
- 
+
  
 
 void Head::setHandMovement( glm::vec3 movement ) {

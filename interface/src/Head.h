@@ -187,6 +187,8 @@ class Head : public AgentData {
         
         void SetNewHeadTarget(float, float);
         glm::vec3 getPos() { return position; };
+        glm::vec3 getHeadPosition2D() { return headPosition2D; };
+        
         void setPos(glm::vec3 newpos) { position = newpos; };
     
         //  Set what driving keys are being pressed to control thrust levels
@@ -236,6 +238,7 @@ class Head : public AgentData {
         float browAudioLift;
     
         glm::vec3 position;
+        glm::vec3 headPosition2D;
         //glm::vec3 velocity;
         //glm::vec3 thrust;
 		

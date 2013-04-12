@@ -61,6 +61,7 @@
 #include "MenuColumn.h"
 #include "Menu.h"
 #include "Head.h"
+#include "Chat.h"
 #include "Hand.h"
 #include "Camera.h"
 #include "Particle.h"
@@ -176,6 +177,9 @@ int mousePressed = 0;				//  true if mouse has been pressed (clear when finished
 
 Menu menu;                          // main menu
 int menuOn = 1;					//  Whether to show onscreen menu
+
+Chat chat;                      // main chat
+int chatOn = 0;					//  Whether to accept chat or not
 
 //
 //  Serial USB Variables
@@ -852,6 +856,9 @@ void display(void)
     }
     
     glPopMatrix();
+double modelMatrix[16], projMatrix[16];
+glGetDoublev(GL_MODELVIEW_MATRIX,modelMatrix);
+glGetDoublev(GL_PROJECTION_MATRIX,projMatrix);
 
     //  Render 2D overlay:  I/O level bar graphs and text  
     glMatrixMode(GL_PROJECTION);
@@ -897,6 +904,11 @@ void display(void)
         glPointSize(1.0f);
         menu.render(WIDTH,HEIGHT);
     }
+    //  Show chat entry
+    if (::chatOn) {
+        chat.render(WIDTH,HEIGHT);
+    }
+    chat.renderAvatarChat(WIDTH,HEIGHT, &myAvatar, modelMatrix, projMatrix);
 
     //  Draw number of nearby people always
     glPointSize(1.0f);
@@ -968,6 +980,10 @@ int setMirror(int state) {
     return setValue(state, &headMirror);
 }
 
+int setChat(int state) {
+    return setValue(state, &chatOn);
+}
+
 void initMenu() {
     MenuColumn *menuColumnOptions, *menuColumnTools, *menuColumnDebug;
     //  Options
@@ -978,6 +994,7 @@ void initMenu() {
     menuColumnOptions->addRow("Mirror", setMirror);
     //  Tools
     menuColumnTools = menu.addColumn("Tools");
+    menuColumnTools->addRow("Chat", setChat); 
     menuColumnTools->addRow("Stats", setStats); 
     menuColumnTools->addRow("Menu", setMenu);
     // Debug
@@ -1110,85 +1127,90 @@ void specialkey(int k, int x, int y)
 
 
 void keyUp(unsigned char k, int x, int y) {
-    if (k == 'e') myAvatar.setDriveKeys(UP, 0);
-    if (k == 'c') myAvatar.setDriveKeys(DOWN, 0);
-    if (k == 'w') myAvatar.setDriveKeys(FWD, 0);
-    if (k == 's') myAvatar.setDriveKeys(BACK, 0);
-    if (k == 'a') myAvatar.setDriveKeys(ROT_LEFT, 0);
-    if (k == 'd') myAvatar.setDriveKeys(ROT_RIGHT, 0);
-
+    if (chatOn){
+        chat.keyUp(k, x, y);
+    } else {
+        if (k == 'e') myAvatar.setDriveKeys(UP, 0);
+        if (k == 'c') myAvatar.setDriveKeys(DOWN, 0);
+        if (k == 'w') myAvatar.setDriveKeys(FWD, 0);
+        if (k == 's') myAvatar.setDriveKeys(BACK, 0);
+        if (k == 'a') myAvatar.setDriveKeys(ROT_LEFT, 0);
+        if (k == 'd') myAvatar.setDriveKeys(ROT_RIGHT, 0);
+    }
 }
 
 void key(unsigned char k, int x, int y)
 {
+    if (chatOn){
+        chat.key(k, x, y);
+    } else {
+	    //  Process keypresses 
+ 	    if (k == 'q')  ::terminate();
+        if (k == '/')  statsOn = !statsOn;		// toggle stats
+        if (k == '*')  ::starsOn = !::starsOn;		// toggle stars
+        if (k == 'V')  ::showingVoxels = !::showingVoxels;		// toggle voxels
+        if (k == 'F')  ::frustumOn = !::frustumOn;		// toggle view frustum debugging
+        if (k == 'C')  ::cameraFrustum = !::cameraFrustum;	// toggle which frustum to look at
+        if (k == 'G')  ::viewFrustumFromOffset = !::viewFrustumFromOffset;	// toggle view frustum from offset debugging
     
-	//  Process keypresses 
- 	if (k == 'q')  ::terminate();
-    if (k == '/')  statsOn = !statsOn;		// toggle stats
-    if (k == '*')  ::starsOn = !::starsOn;		// toggle stars
-    if (k == 'V')  ::showingVoxels = !::showingVoxels;		// toggle voxels
-    if (k == 'F')  ::frustumOn = !::frustumOn;		// toggle view frustum debugging
-    if (k == 'C')  ::cameraFrustum = !::cameraFrustum;	// toggle which frustum to look at
-    if (k == 'G')  ::viewFrustumFromOffset = !::viewFrustumFromOffset;	// toggle view frustum from offset debugging
-    
-	if (k == '[') ::viewFrustumOffsetYaw   -= 0.5;
-	if (k == ']') ::viewFrustumOffsetYaw   += 0.5;
-	if (k == '{') ::viewFrustumOffsetPitch -= 0.5;
-	if (k == '}') ::viewFrustumOffsetPitch += 0.5;
-	if (k == '(') ::viewFrustumOffsetRoll  -= 0.5;
-	if (k == ')') ::viewFrustumOffsetRoll  += 0.5;
+	    if (k == '[') ::viewFrustumOffsetYaw   -= 0.5;
+	    if (k == ']') ::viewFrustumOffsetYaw   += 0.5;
+	    if (k == '{') ::viewFrustumOffsetPitch -= 0.5;
+	    if (k == '}') ::viewFrustumOffsetPitch += 0.5;
+	    if (k == '(') ::viewFrustumOffsetRoll  -= 0.5;
+	    if (k == ')') ::viewFrustumOffsetRoll  += 0.5;
 
-    if (k == '&') {
-    	::paintOn = !::paintOn;		// toggle paint
-    	::setupPaintingVoxel();		// also randomizes colors
-    }
-    if (k == '^')  ::shiftPaintingColor();		// shifts randomize color between R,G,B dominant
-    if (k == '-')  ::sendVoxelServerEraseAll();	// sends erase all command to voxel server
-    if (k == '%')  ::sendVoxelServerAddScene();	// sends add scene command to voxel server
-	if (k == 'n') 
-    {
-        noiseOn = !noiseOn;                   // Toggle noise 
-        if (noiseOn)
-        {
-            myAvatar.setNoise(noise);
+        if (k == '&') {
+    	    ::paintOn = !::paintOn;		// toggle paint
+    	    ::setupPaintingVoxel();		// also randomizes colors
         }
-        else 
-        {
-            myAvatar.setNoise(0);
-        }
+        if (k == '^')  ::shiftPaintingColor();		// shifts randomize color between R,G,B dominant
+        if (k == '-')  ::sendVoxelServerEraseAll();	// sends erase all command to voxel server
+        if (k == '%')  ::sendVoxelServerAddScene();	// sends add scene command to voxel server
+	    if (k == 'n') {
+            noiseOn = !noiseOn;                   // Toggle noise 
+            if (noiseOn)
+            {
+                myAvatar.setNoise(noise);
+            }
+            else 
+            {
+                myAvatar.setNoise(0);
+            }
 
-    }
+        }
     
-    if (k == 'h') {
-        displayHead = !displayHead;
-        #ifndef _WIN32
-        audio.setMixerLoopbackFlag(displayHead);
-        #endif
-    }
+        if (k == 'h') {
+            displayHead = !displayHead;
+            #ifndef _WIN32
+            audio.setMixerLoopbackFlag(displayHead);
+            #endif
+        }
     
-    if (k == 'm') setMenu(-2);
+        if (k == 'm') setMenu(-2);
     
-    if (k == 'f') displayField = !displayField;
-    if (k == 'l') displayLevels = !displayLevels;
-    if (k == 'e') myAvatar.setDriveKeys(UP, 1);
-    if (k == 'c') myAvatar.setDriveKeys(DOWN, 1);
-    if (k == 'w') myAvatar.setDriveKeys(FWD, 1);
-    if (k == 's') myAvatar.setDriveKeys(BACK, 1);
-    if (k == ' ') reset_sensors();
-    if (k == 't') renderPitchRate -= KEYBOARD_PITCH_RATE;
-    if (k == 'g') renderPitchRate += KEYBOARD_PITCH_RATE;
+        if (k == 'f') displayField = !displayField;
+        if (k == 'l') displayLevels = !displayLevels;
+        if (k == 'e') myAvatar.setDriveKeys(UP, 1);
+        if (k == 'c') myAvatar.setDriveKeys(DOWN, 1);
+        if (k == 'w') myAvatar.setDriveKeys(FWD, 1);
+        if (k == 's') myAvatar.setDriveKeys(BACK, 1);
+        if (k == ' ') reset_sensors();
+        if (k == 't') renderPitchRate -= KEYBOARD_PITCH_RATE;
+        if (k == 'g') renderPitchRate += KEYBOARD_PITCH_RATE;
 #ifdef STARFIELD_KEYS
-    if (k == 'u') stars.setResolution(starsTiles += 1);
-    if (k == 'j') stars.setResolution(starsTiles = max(starsTiles-1,1));
-    if (k == 'i') if (starsLod < 1.0) starsLod = stars.changeLOD(1.01);
-    if (k == 'k') if (starsLod > 0.01) starsLod = stars.changeLOD(0.99);
-    if (k == 'r') stars.readInput(starFile, 0);
+        if (k == 'u') stars.setResolution(starsTiles += 1);
+        if (k == 'j') stars.setResolution(starsTiles = max(starsTiles-1,1));
+        if (k == 'i') if (starsLod < 1.0) starsLod = stars.changeLOD(1.01);
+        if (k == 'k') if (starsLod > 0.01) starsLod = stars.changeLOD(0.99);
+        if (k == 'r') stars.readInput(starFile, 0);
 #endif
-    if (k == 'a') myAvatar.setDriveKeys(ROT_LEFT, 1); 
-    if (k == 'd') myAvatar.setDriveKeys(ROT_RIGHT, 1);
+        if (k == 'a') myAvatar.setDriveKeys(ROT_LEFT, 1); 
+        if (k == 'd') myAvatar.setDriveKeys(ROT_RIGHT, 1);
 
-	// press the . key to get a new random sphere of voxels added 
-    if (k == '.') addRandomSphere(wantColorRandomizer);
+	    // press the . key to get a new random sphere of voxels added 
+        if (k == '.') addRandomSphere(wantColorRandomizer);
+    }
 }
 
 //  Receive packets from other agents/servers and decide what to do with them!
