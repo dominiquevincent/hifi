@@ -6,6 +6,10 @@
 //	adapted by Jeffrey Ventrella, starting on April 2, 2013
 //  Copyright (c) 2012 Physical, Inc.. All rights reserved.
 //
+#ifdef _WIN32
+#define _timeval_
+#define _USE_MATH_DEFINES
+#endif
 
 #include <iostream>
 #include <glm/glm.hpp>
@@ -13,6 +17,12 @@
 #include <lodepng.h>
 #include <fstream>
 #include <sstream>
+
+
+#ifdef _WIN32
+#include "Syssocket.h"
+#endif
+
 #include <SharedUtil.h>
 #include "Head.h"
 #include <AgentList.h>

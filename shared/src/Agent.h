@@ -12,6 +12,7 @@
 #include <iostream>
 #include <stdint.h>
 #include "AgentData.h"
+#include <pthread.h>
 
 #ifdef _WIN32
 #include "Syssocket.h"

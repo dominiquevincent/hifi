@@ -75,7 +75,7 @@ bool Menu::mouseClick(int x, int y) {
     bool menuFound = false;
     for (unsigned int i = 0; i < columns.size(); ++i) {
         columnWidth = columns[i].getWidth();
-        rightPosition = leftPosition + columnWidth + 1.5 * SPACE_BETWEEN_COLUMNS;
+        rightPosition = leftPosition + columnWidth + SPACE_BETWEEN_COLUMNS;
         if (x > leftPosition && x < rightPosition && y > 0 && y < MENU_HEIGHT) {
             mouseClickColumn(i);
             menuFound = true;

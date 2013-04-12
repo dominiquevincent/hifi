@@ -232,7 +232,9 @@ bool AgentList::addOrUpdateAgent(sockaddr *publicSocket, sockaddr *localSocket, 
             // for now that means we need to tell the audio class
             // to use the local socket information the domain server gave us
             sockaddr_in *publicSocketIn = (sockaddr_in *)publicSocket;
-            audioMixerSocketUpdate(publicSocketIn->sin_addr.s_addr, publicSocketIn->sin_port);
+#ifndef _WIN32
+                audioMixerSocketUpdate(publicSocketIn->sin_addr.s_addr, publicSocketIn->sin_port);
+#endif
         } else if (newAgent.getType() == AGENT_TYPE_VOXEL) {
             newAgent.activatePublicSocket();
         }
